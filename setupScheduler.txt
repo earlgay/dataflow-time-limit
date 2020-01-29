@@ -1,0 +1,1 @@
+To setup Cloud Scheduler to invoke this service, navigate to: https://cloud.google.com/run/docs/triggering/using-scheduler

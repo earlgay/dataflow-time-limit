@@ -12,10 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM node:10
+FROM google/cloud-sdk:latest
 
 # Create app directory
 WORKDIR /usr/src/app
+
+# Install NodeJS
+RUN apt-get update
+RUN apt-get install curl gnupg -y 
+RUN curl -sL https://deb.nodesource.com/setup_12.x  | bash -
+RUN apt-get install nodejs -y
+RUN npm install
 
 # Install app dependencies
 # A wildcard is used to ensure both package.json AND package-lock.json are copied

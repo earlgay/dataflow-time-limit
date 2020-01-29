@@ -22,7 +22,7 @@ steps:
   waitFor:
   - build
 - name: 'gcr.io/cloud-builders/gcloud'
-  args: ['alpha', 'run', 'deploy', 'dataflow-time-limit', '--image', 'gcr.io/$PROJECT_ID/dataflow-time-limit', '--platform', 'managed', '--no-allow-unauthenticated', '--region=us-east1']
+  args: ['alpha', 'run', 'deploy', 'dataflow-time-limit', '--image', 'gcr.io/$PROJECT_ID/dataflow-time-limit', '--platform', 'managed', '--allow-unauthenticated', '--region=us-east1']
   id: deploy
   waitFor: 
   - push
