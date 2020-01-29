@@ -3,13 +3,9 @@ const app = express();
 const spawn = require('child_process').spawnSync;
 const timediff = require('timediff');
 
-let TIME_LIMIT = process.env.TIME_LIMIT;
+let TIME_LIMIT = process.env.TIME_LIMIT || 99999999;
 let REGION = process.env.REGION || 'us-central1';
 
-if (TIME_LIMIT == undefined) {
-    console.log('No maximum duration configured. Exiting...');
-    process.exit(1);
-}
 let port = process.env.PORT || '8080';
 
 app.get('/', function(req, res) {
