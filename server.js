@@ -3,7 +3,7 @@ const app = express();
 const spawn = require('child_process').spawnSync;
 const timediff = require('timediff');
 
-let TIME_LIMIT = process.env.TIME_LIMIT || 99999999;
+let TIME_LIMIT = process.env.TIME_LIMIT || 99999999; // Set the value to a large number (e.g. 190 years) if the time limit isn't properly configured.
 let REGION = process.env.REGION || 'us-central1';
 
 let port = process.env.PORT || '8080';
@@ -20,21 +20,12 @@ app.get('/', function(req, res) {
  * @returns {Array} - List of jobs that violated the maximum duration.
  */
 function parseJobs(maximumDuration, region) {
-    let command = [
-        'dataflow',
-        'jobs',
-        'list',
-        '--status=active',
-        '--region=' + region,
-        '--format=json'
-    ];
+    let command = ['dataflow', 'jobs', 'list', '--status=active', '--region=' + region, '--format=json'];
     const checkJobs = JSON.parse(spawn('gcloud', command).stdout);
 
     let badJobs = [];
 
-    console.log(
-        `Checking for jobs that exceed configuration maximum duration (${maximumDuration}) with ${region}...\n`
-    );
+    console.log(`Checking for jobs that exceed configuration maximum duration (${maximumDuration}) with ${region}...\n`);
     for (let i = 0; i < checkJobs.length; i++) {
         // (job).creationTime will be in the format: 2020-01-29 20:48:36
         let jobDate = checkJobs[i].creationTime.split(' ')[0];
@@ -78,19 +69,10 @@ function stopJobs(badJobs, region) {
     };
     for (let job in badJobs) {
         console.log(`\nAttempting to stop job: ${badJobs[job]}`);
-        let command = [
-            'dataflow',
-            'jobs',
-            'cancel',
-            badJobs[job],
-            '--region=' + region
-        ];
+        let command = ['dataflow', 'jobs', 'cancel', badJobs[job], '--region=' + region];
         const cancelJob = spawn('gcloud', command);
 
-        if (
-            cancelJob.status === 0 &&
-            cancelJob.output.toString('utf8').includes('Cancelled job')
-        ) {
+        if (cancelJob.status === 0 && cancelJob.output.toString('utf8').includes('Cancelled job')) {
             console.log(`Stopped job (${badJobs[job]}) successfully!`);
             jobResults.success.push(badJobs[job]);
         } else {

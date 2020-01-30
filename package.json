@@ -1,6 +1,6 @@
 {
     "name": "dataflow-time-limit",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "description": "Dataflow job time limiter",
     "main": "server.js",
     "scripts": {
