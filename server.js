@@ -37,39 +37,46 @@ app.get('/', function(req, res) {
  */
 function parseJobs(maximumDuration, region) {
     let command = ['dataflow', 'jobs', 'list', '--status=active', '--region=' + region, '--format=json'];
-    const checkJobs = JSON.parse(spawn('gcloud', command).stdout);
+    const checkJobs = spawn('gcloud', command);
 
-    let badJobs = [];
+    if (checkJobs.status === 0) {
+        const jobs = JSON.parse(checkJobs.stdout);
+        let badJobs = [];
 
-    console.log(`Checking for jobs that exceed configuration maximum duration (${maximumDuration}) with ${region}...\n`);
-    for (let i = 0; i < checkJobs.length; i++) {
-        // (job).creationTime will be in the format: 2020-01-29 20:48:36
-        let jobDate = checkJobs[i].creationTime.split(' ')[0];
-        let jobTime = checkJobs[i].creationTime.split(' ')[1];
+        console.log(`Checking for jobs that exceed configuration maximum duration (${maximumDuration}) with ${region}...\n`);
+        for (let i = 0; i < jobs.length; i++) {
+            // (job).creationTime will be in the format: 2020-01-29 20:48:36
+            let jobDate = jobs[i].creationTime.split(' ')[0];
+            let jobTime = jobs[i].creationTime.split(' ')[1];
 
-        let creation = new Date(
-            Date.UTC(
-                jobDate.split('-')[0],
-                jobDate.split('-')[1] - 1,
-                jobDate.split('-')[2],
-                jobTime.split(':')[0],
-                jobTime.split(':')[1],
-                jobTime.split(':')[2]
-            )
-        );
-
-        let duration = timediff(creation, new Date(), 'm').minutes;
-        if (duration > maximumDuration) {
-            console.log(
-                `Found job violating maximum duration:\n` +
-                    `\t ID: ${checkJobs[i].id}\n` +
-                    `\t Creation Time: ${checkJobs[i].creationTime}\n` +
-                    `\t Duration: ${duration}\n`
+            let creation = new Date(
+                Date.UTC(
+                    jobDate.split('-')[0],
+                    jobDate.split('-')[1] - 1,
+                    jobDate.split('-')[2],
+                    jobTime.split(':')[0],
+                    jobTime.split(':')[1],
+                    jobTime.split(':')[2]
+                )
             );
-            badJobs.push(checkJobs[i].id);
+
+            let duration = timediff(creation, new Date(), 'm').minutes;
+            if (duration > maximumDuration) {
+                console.log(
+                    `Found job violating maximum duration:\n` +
+                        `\t ID: ${jobs[i].id}\n` +
+                        `\t Creation Time: ${jobs[i].creationTime}\n` +
+                        `\t Duration: ${duration}\n`
+                );
+                badJobs.push(jobs[i].id);
+            }
         }
+        return badJobs;
+    } else {
+        console.log(`Error: ${checkJobs.output}`);
+        console.log(`Unable to obtain list of dataflow jobs.`);
+        process.exit(1);
     }
-    return badJobs;
 }
 
 /**

@@ -53,17 +53,31 @@ gcloud iam service-accounts create [SERVICE-ACCOUNT_NAME] \
 ```
 gcloud run services add-iam-policy-binding dataflow-time-limit \
    --member=serviceAccount:[SERVICE-ACCOUNT_NAME]@[PROJECT].iam.gserviceaccount.com \
-   --role=roles/run.invoker
+   --role=roles/run.invoker \
+   --platform managed \
+   --region [REGION]
 ```
 
-4. Create the Cloud Scheduler Job (this uses normal Cron syntax, and the below example runs every 5 minutes)
+4. Create the Cloud Scheduler Job (this uses normal Cron syntax, and the below example runs every 1 minutes -- which is good for testing but would ideally be longer for production)
 
 ```
-gcloud beta scheduler jobs create http dataflow-time-limit-job --schedule "*/5 * * * *"
+gcloud beta scheduler jobs create http dataflow-time-limit-job --schedule "*/1 * * * *" \
    --http-method=GET \
-   --uri=SERVICE-[SERVICE_URL] \
+   --uri=[SERVICE_URL] \
    --oidc-service-account-email=[SERVICE-ACCOUNT_NAME]@[PROJECT].iam.gserviceaccount.com   \
    --oidc-token-audience=[SERVICE_URL]
+```
+
+_Note: If prompted, select yes to create an App Engine project, select yes to enable the App Engine API, and select the same [REGION] for the region._
+
+Confirm the scheduled job was created:
+```
+gcloud beta scheduler jobs list
+```
+
+If you want to change the schedule (e.g. increase to every 5 minutes), run the following: 
+```
+gcloud beta scheduler jobs update http dataflow-time-limit-job --schedule "*/5 * * * *"
 ```
 
 Variable definitions:
@@ -112,13 +126,18 @@ gcloud config set project [PROJECT_NAME]
 export TIME_LIMIT=0
 ```
 
-3. Start the service:
+3. Install node modules:
+```
+npm install
+```
+
+4. Start the service:
 
 ```
 node server.js
 ```
 
-4. Browse to http://localhost:8080 to imitate a Cloud Scheduler invokation.
+5. Browse to http://localhost:8080 to imitate a Cloud Scheduler invokation.
 
 The following is an example of the service started, being invoked, and the service stopping a job:
 
@@ -135,6 +154,12 @@ Found job violating maximum duration:
 
 Attempting to stop job: 2020-01-29_14_43_16-1775589797322616320
 Stopped job (2020-01-29_14_43_16-1775589797322616320) successfully!
+```
+
+If there are no jobs found that violate the maximum duration, it will simply print something similar to the following:
+```
+Checking for jobs that exceed configuration maximum duration (0) with us-central1...
+
 ```
 
 ### Testing Cloud Run Service Manually
@@ -172,6 +197,20 @@ Use this [Interactive Tutorial](https://console.cloud.google.com/dataflow?walkth
 You should see within the logs of the Cloud Run Service results similar to the following:
 
 ![Examle Log of Successful Cancellation](https://github.com/earlgay/dataflow-time-limit/raw/master/assets/log_success.PNG)
+
+## Prepare Settings for Production Usage
+
+During testing, you likely set time to low values to ease testing time. If so, let's increase settings to a more reasonable level.
+
+1. Change maximum duration to a higher number, such as 1440 (1 day):
+```
+gcloud run services update dataflow-time-limit --set-env-vars TIME_LIMIT=1440 --platform managed --region [REGION]
+```
+
+2. Change Cloud Scheduler to run hourly:
+```
+gcloud beta scheduler jobs update http dataflow-time-limit-job --schedule "0 * * * *"
+```
 
 ## Cleanup
 
